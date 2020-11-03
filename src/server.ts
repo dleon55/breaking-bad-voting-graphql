@@ -34,9 +34,7 @@ const pubsub = new PubSub();
     });
 
     server.applyMiddleware({ app });
-    app.use('/',expressPlayGround({
-        endpoint:'/graphql'
-    }))
+    
     app.use('/', expressPlayGround({
         endpoint: '/graphql'
     }));
