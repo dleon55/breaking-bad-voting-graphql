@@ -9,47 +9,50 @@ import Database from './config/database';
 import expressPlayGround from 'graphql-playground-middleware-express';
 
 if (process.env.NODE_ENV !== 'production') {
-    const envs = environments;
-    console.log(envs);
+  const envs = environments;
+  console.log(envs);
 }
 
 async function init() {
-    const app = express();
-const pubsub = new PubSub();
-    app.use('*', cors());
+  const app = express();
+  app.use('*', cors());
+  const pubsub = new PubSub();
+  app.use(compression());
 
-    app.use(compression());
+  const database = new Database();
+  const db = await database.init();
 
-    const database = new Database();
-    const db = await database.init();
+  const context: any = async () => {
+    return { db, pubsub };
+  };
 
-    const context: any = async() => {
-        return { db, pubsub };
-    };
-    
-    const server = new ApolloServer({
-        schema,
-        context,
-        introspection: true
-    });
+  const server = new ApolloServer({
+    schema,
+    context,
+    introspection: true,
+  });
 
-    server.applyMiddleware({ app });
-    
-    app.use('/', expressPlayGround({
-        endpoint: '/graphql'
-    }));
+  server.applyMiddleware({ app });
 
-    const PORT = process.env.PORT || 5300;
-    const httpServer = createServer(app);
-    server.installSubscriptionHandlers(httpServer);
-    httpServer.listen(
-        { port: PORT },
-        () => {
-            console.log('======================SERVER=========================');
-            console.log(`Votaciones API GraphQL http://localhost:${PORT}${server.graphqlPath}`);
-            console.log(`Subscription Votaciones Breaking Bad API GraphQL http://localhost:${PORT}${server.subscriptionsPath}`);
-        }
+  app.use(
+    '/',
+    expressPlayGround({
+      endpoint: '/graphql',
+    })
+  );
+
+  const PORT = process.env.PORT || 5300;
+  const httpServer = createServer(app);
+  server.installSubscriptionHandlers(httpServer);
+  httpServer.listen({ port: PORT }, () => {
+    console.log('======================SERVER=========================');
+    console.log(
+      `Votaciones API GraphQL http://localhost:${PORT}${server.graphqlPath}`
     );
+    console.log(
+      `Subscription Votaciones Breaking Bad API GraphQL ws://localhost:${PORT}${server.subscriptionsPath}`
+    );
+  });
 }
 
 init();
